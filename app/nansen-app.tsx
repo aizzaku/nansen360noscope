@@ -10,6 +10,7 @@ import { ToolIcon } from "@/components/tool-icon";
 import { defaultInput, estimateRun, getPlaybook, inputSchema, playbooks, resultSchema, shortAddress, toolIds, validateInput, type InvestigationResult, type RunInput, type ToolId } from "@/lib/playbooks";
 import { compactResult, freshLesson, initialState, readLocalState, writeLocalState, type LocalState, type SavedInvestigation } from "@/lib/local-state";
 import { demoEvidence } from "@/lib/demo-evidence";
+import { getAnalystGuide } from "@/lib/analyst-guides";
 import { learningGuides } from "@/lib/learning-guides";
 import { workflowExamples, type WorkflowExample } from "@/lib/workflow-examples";
 import "./nansen.css";
@@ -40,6 +41,7 @@ export default function NansenApp() {
   const [storageError, setStorageError] = useState<string | null>(null);
   const [welcome, setWelcome] = useState(false);
   const [investigateGuide, setInvestigateGuide] = useState(false);
+  const [analystGuide, setAnalystGuide] = useState(false);
   const [guideStep, setGuideStep] = useState(0);
   const [settings, setSettings] = useState(false);
   const [library, setLibrary] = useState(false);
@@ -222,7 +224,7 @@ export default function NansenApp() {
             {lesson.stage !== 4 && <div className="n-learn-footer"><button onClick={openInvestigate}>Open {current.name} <ArrowRight size={15} /></button></div>}
           </> : <>
             <form className="n-panel n-run-form n-tool-form" onSubmit={(e: FormEvent) => { e.preventDefault(); requestRun(input); }}>
-              <div className="n-form-title"><span className="n-eyebrow">{runLabels[state.active]}</span><label className="n-source-select">Data<select aria-label="Data source" value={input.demo ? "demo" : "live"} onChange={e => updateInput({ demo: e.target.value === "demo" })}><option value="demo">Sample</option><option value="live" disabled={!liveAvailable}>Live{!liveAvailable ? " · unavailable" : ""}</option></select></label></div>
+              <div className="n-form-title"><span className="n-eyebrow">{runLabels[state.active]}</span><div className="n-form-tools"><Button type="button" variant="ghost" className="n-analysis-guide-trigger" onClick={() => setAnalystGuide(true)}><BookOpen size={15} /> Analysis guide</Button><label className="n-source-select">Data<select aria-label="Data source" value={input.demo ? "demo" : "live"} onChange={e => updateInput({ demo: e.target.value === "demo" })}><option value="demo">Sample</option><option value="live" disabled={!liveAvailable}>Live{!liveAvailable ? " · unavailable" : ""}</option></select></label></div></div>
               <div className={`n-fields ${state.active === "signal" ? "n-signal-fields" : ""}`}>
                 {state.active !== "signal" && <label className="n-subject">{state.active === "token" ? "Token contract address" : "Wallet address"}<input aria-label={state.active === "token" ? "Token contract address" : "Wallet address"} value={input.subject} onChange={e => updateInput({ subject: e.target.value })} spellCheck={false} placeholder="0x…" required disabled={input.demo} /></label>}
                 <label>{state.active === "defi" ? "Wallet balance chain" : "Chain"}<select aria-label="Chain" value={input.chain} disabled={input.demo} onChange={e => { const parsed = inputSchema.safeParse({ ...input, chain: e.target.value }); if (parsed.success) updateInput({ chain: parsed.data.chain }); }}>{current.chains.map(chain => <option key={chain} value={chain}>{chainLabel(chain)}</option>)}</select></label>
@@ -272,10 +274,31 @@ export default function NansenApp() {
         <div className="n-guide-actions"><Button variant="ghost" onClick={finishInvestigateGuide}>Skip tour</Button><div>{guideStep > 0 && <Button variant="outline" onClick={() => setGuideStep(step => step - 1)}>Back</Button>}<Button className="n-primary" onClick={() => { if (guideStep === investigateGuideSteps.length - 1) finishInvestigateGuide(); else setGuideStep(step => step + 1); }}>{guideStep === investigateGuideSteps.length - 1 ? "Start investigating" : "Next"}<ArrowRight /></Button></div></div>
       </DialogContent>
     </Dialog>
+    <AnalystGuideDialog open={analystGuide} onOpenChange={setAnalystGuide} tool={state.active} />
     <Dialog open={settings} onOpenChange={setSettings}><DialogContent onCloseAutoFocus={e => { e.preventDefault(); replayRef.current?.focus(); }}><DialogTitle>Workspace preferences</DialogTitle><DialogDescription>Learning progress and saved investigations are stored only in this browser.</DialogDescription><Button variant="outline" onClick={() => { setSettings(false); setWelcome(true); }}>Replay introduction</Button><Button variant="outline" onClick={() => { setSettings(false); setConfirm({ kind: "reset" }); }}>Reset learning progress</Button><p className="n-muted">Live data: {liveAvailable ? "configured" : "not configured"}. API credentials stay on the server.</p></DialogContent></Dialog>
     <Dialog open={rename !== null} onOpenChange={open => { if (!open) setRename(null); }}><DialogContent><DialogTitle>Rename investigation</DialogTitle><DialogDescription>Choose a name you’ll recognize in your library.</DialogDescription><form className="n-rename" onSubmit={e => { e.preventDefault(); if (!rename || !name.trim()) return; commit({ ...state, library: state.library.map(saved => saved.id === rename.id ? { ...saved, name: name.trim() } : saved) }); setRename(null); }}><label htmlFor="saved-name">Investigation name</label><input id="saved-name" autoFocus value={name} maxLength={100} onChange={e => setName(e.target.value)} /><Button type="submit" disabled={!name.trim()}>Save name</Button></form></DialogContent></Dialog>
     <AlertDialog open={confirm !== null} onOpenChange={open => { if (!open) setConfirm(null); }}><AlertDialogContent onCloseAutoFocus={e => { e.preventDefault(); confirmRef.current?.focus(); }}><AlertDialogTitle>{confirm?.kind === "run" ? "Run a paid investigation?" : confirm?.kind === "reset" ? "Reset learning progress?" : "Remove this investigation?"}</AlertDialogTitle><AlertDialogDescription>{confirm?.kind === "run" ? `${getPlaybook(confirm.input.tool).name} will make ${estimateRun(confirm.input).maximum ? "up to " : ""}${estimateRun(confirm.input).requests} requests, estimated at ${estimateRun(confirm.input).credits} Nansen credits. Actual usage will appear in the query log when supplied by Nansen.` : confirm?.kind === "reset" ? "This clears all five case hypotheses, verdicts, and completion markers. Your investigation library is kept." : "This removes the saved snapshot from this browser. This cannot be undone."}</AlertDialogDescription><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => { if (confirm?.kind === "run") void execute(confirm.input); else if (confirm?.kind === "reset") { commit({ ...state, lessons: initialState().lessons }); setNotice("Learning progress reset."); } else if (confirm?.kind === "remove") commit({ ...state, library: state.library.filter(saved => saved.id !== confirm.id) }); setConfirm(null); }}>{confirm?.kind === "run" ? "Confirm and run" : confirm?.kind === "reset" ? "Reset progress" : "Remove investigation"}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
   </div>;
+}
+
+function AnalystGuideDialog({ open, onOpenChange, tool }: { open: boolean; onOpenChange: (open: boolean) => void; tool: ToolId }) {
+  const guide = getAnalystGuide(tool);
+  return <Dialog open={open} onOpenChange={onOpenChange}>
+    <DialogContent className="n-analyst-guide">
+      <div className="n-eyebrow">ANALYSIS GUIDE · {getPlaybook(tool).name}</div>
+      <DialogTitle>{guide.title}</DialogTitle>
+      <DialogDescription>{guide.coreQuestion}</DialogDescription>
+      <div className="n-guide-scroll">
+        <section><h3>Before you run</h3><ul>{guide.beforeYouRun.map(item => <li key={item}>{item}</li>)}</ul></section>
+        <section><h3>Read the evidence in this order</h3><ol>{guide.readingOrder.map(step => <li key={step.title}><strong>{step.title}</strong><span>{step.instruction}</span><small>Decision: {step.decision}</small></li>)}</ol></section>
+        <details><summary>Metric meanings and cautions</summary><div className="n-guide-detail-grid">{guide.metrics.map(metric => <article key={metric.name}><strong>{metric.name}</strong><p>{metric.meaning}</p><small><b>Read as:</b> {metric.readAs}</small><small><b>Caution:</b> {metric.caution}</small></article>)}</div></details>
+        <details><summary>Evidence checks</summary><ul>{guide.evidenceChecks.map(check => <li key={check.question}><strong>{check.question}</strong><span>{check.why}</span><small>Check: {check.source}</small></li>)}</ul></details>
+        <details><summary>Common mistakes</summary><ul>{guide.commonMistakes.map(item => <li key={item}>{item}</li>)}</ul></details>
+        <details><summary>What you cannot conclude</summary><ul>{guide.conclusionLimits.map(item => <li key={item}>{item}</li>)}</ul></details>
+        <section className="n-guide-recipe"><h3>Full workflow</h3><ol>{guide.analysisRecipe.map(item => <li key={item}>{item}</li>)}</ol></section>
+      </div>
+    </DialogContent>
+  </Dialog>;
 }
 
 function CompactExamples({ examples, onLoad }: { examples: [WorkflowExample, WorkflowExample]; onLoad: (example: WorkflowExample) => void }) {

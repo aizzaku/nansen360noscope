@@ -45,6 +45,7 @@ next-env.d.ts
 /.agents/
 /.codex/
 /outputs/
+/videos/
 /work/
 /task_plan.md
 /notes.md

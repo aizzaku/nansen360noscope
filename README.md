@@ -26,6 +26,8 @@ Nansen 360 NoScope is a beginner-friendly on-chain investigation workspace that 
 6. Open the underlying evidence before drawing a conclusion.
 7. Save useful investigations for later.
 
+Use the compact **Analysis guide** inside every Investigate tool. For the complete evidence checks, metric definitions, mistakes, and conclusion limits, read the [Analyst Guide](./ANALYST_GUIDE.md).
+
 ## Tools
 
 | Tool | What it helps answer |
@@ -65,6 +67,8 @@ npm run build
 ## Live API surface
 
 The server adapters cover Nansen profiler balances, transactions, related wallets, PnL, DEX trades, token holders and flows, Smart Money holdings/netflows, token screening, and DeFi holdings. Live runs show request status and reported credit use in the query log.
+
+The integration was verified with [106 successful live API calls across all five tools](./API_VALIDATION.md).
 
 Without a key, the product remains fully reviewable through explicitly labelled sample data. Sample conclusions are teaching fixtures, not measurements of the entered address.
 
