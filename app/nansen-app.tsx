@@ -25,6 +25,14 @@ const toolPromises: Record<ToolId, string> = {
   defi: "See where a wallet is deployed and what it owes.",
 };
 const runLabels: Record<ToolId, string> = { wallet: "Analyze wallet", trader: "Analyze trader", token: "Analyze token", signal: "Find tokens", defi: "Analyze portfolio" };
+const howItWorks = ["Choose tool", "Add key", "Confirm cost", "Review evidence"] as const;
+const emptyGuidance: Record<ToolId, { title: string; body: string }> = {
+  wallet: { title: "Trace a wallet", body: "Enter an address or load a case study to map activity and connections." },
+  trader: { title: "Test a trader", body: "Load a wallet to see whether its performance is broad, repeatable, or concentrated." },
+  token: { title: "Challenge a token narrative", body: "Enter a token contract to compare ownership, flows, buyers, and sellers." },
+  signal: { title: "Find a research lead", body: "Set liquidity and Smart Money filters to create a shortlist—not a buy signal." },
+  defi: { title: "Map DeFi exposure", body: "Enter a wallet to compare liquid balances, protocols, chains, and available debt data." },
+};
 const investigateGuideSteps = [
   { label: "01 · CHOOSE", title: "Pick the question, not the chart", body: "Select the tool that matches what you need to decide: trace a wallet, test a trader, challenge a token narrative, screen signals, or map DeFi exposure." },
   { label: "02 · LOAD", title: "Start from a public workflow", body: "Each tool includes two sourced case studies. Loading one prepares the address, chain, window, and filters—it never runs a paid query." },
@@ -204,6 +212,10 @@ export default function NansenApp() {
             <GuidedLesson tool={state.active} lesson={lesson} updateLesson={updateLesson} onOpenTool={openInvestigate} />
             {lesson.stage !== 4 && <div className="n-learn-footer"><button onClick={openInvestigate}>Open {current.name} <ArrowRight size={15} /></button></div>}
           </> : <>
+            <div className="n-how-strip" aria-label="How investigations work">
+              <ol>{howItWorks.map((step, index) => <li key={step}><span>0{index + 1}</span>{step}</li>)}</ol>
+              <a href="https://github.com/aizzaku/nansen360noscope/blob/main/API_VALIDATION.md" target="_blank" rel="noreferrer" aria-label="View API validation evidence">Built with Nansen API · 106/106 live validation calls · 11 endpoints</a>
+            </div>
             <form className="n-panel n-run-form n-tool-form" onSubmit={(e: FormEvent) => { e.preventDefault(); requestRun(input); }}>
               <div className="n-form-title"><span className="n-eyebrow">{runLabels[state.active]}</span><div className="n-form-tools"><Button type="button" variant="ghost" className="n-analysis-guide-trigger" onClick={() => setAnalystGuide(true)}><BookOpen size={15} /> Analysis guide</Button><Button type="button" variant="outline" className={`n-key-trigger ${apiKey ? "connected" : ""}`} onClick={() => { setKeyDraft(""); setKeyDialog(true); }}><KeyRound size={15} /> {apiKey ? "Key ready" : "Add API key"}</Button></div></div>
               <div className={`n-fields ${state.active === "signal" ? "n-signal-fields" : ""}`}>
@@ -218,7 +230,7 @@ export default function NansenApp() {
               {state.active === "defi" && <p className="n-form-note">DeFi is a current cross-chain snapshot. Wallet balances use the selected chain.</p>}
               <p className="n-form-note n-key-note"><KeyRound size={13} /> {apiKey ? "API key ready in this tab only. It will be transiently forwarded when you confirm a run." : "Add your own Nansen API key. It stays in this tab's memory and is never saved by the app."}</p>
             </form>
-            {entry ? <div ref={resultRef} className="n-result-region" tabIndex={-1} aria-labelledby="investigation-results-heading"><h2 id="investigation-results-heading" className="sr-only">Investigation results</h2><div className="n-result-actions"><span>{entry.cached ? "SAVED" : "RESULT"} · {shortAddress(entry.result.subject)}</span><div><Button variant="ghost" disabled={loading !== null} onClick={() => requestRun(entry.input)}><RotateCcw /> Rerun</Button><Button variant="outline" disabled={entry.result.status === "failed"} onClick={saveEntry}><Save /> Save</Button></div></div><InvestigationSummary result={entry.result} onCandidate={openCandidate} /><details className="n-panel n-investigation-details"><summary>Evidence, tables and query details</summary><Results result={entry.result} cached={entry.cached} hideConclusion onCandidate={openCandidate} /></details></div> : <div className="n-tool-ready"><ToolIcon icon={Icon} size="empty" tone="gold" /><div><h2>Ready</h2><p>{state.active === "signal" ? "Set your filters and find candidates." : `Enter a ${state.active === "token" ? "token" : "wallet"} or load an example.`}</p></div></div>}
+            {entry ? <div ref={resultRef} className="n-result-region" tabIndex={-1} aria-labelledby="investigation-results-heading"><h2 id="investigation-results-heading" className="sr-only">Investigation results</h2><div className="n-result-actions"><span>{entry.cached ? "SAVED" : "RESULT"} · {shortAddress(entry.result.subject)}</span><div><Button variant="ghost" disabled={loading !== null} onClick={() => requestRun(entry.input)}><RotateCcw /> Rerun</Button><Button variant="outline" disabled={entry.result.status === "failed"} onClick={saveEntry}><Save /> Save</Button></div></div><InvestigationSummary result={entry.result} onCandidate={openCandidate} /><details className="n-panel n-investigation-details"><summary>Evidence, tables and query details</summary><Results result={entry.result} cached={entry.cached} hideConclusion onCandidate={openCandidate} /></details></div> : <div className="n-tool-ready"><ToolIcon icon={Icon} size="empty" tone="gold" /><div><h2>{emptyGuidance[state.active].title}</h2><p>{emptyGuidance[state.active].body}</p></div></div>}
           </>}
         </>}
         <footer className="n-footer"><span>NANSEN 360 NOSCOPE</span><span>Prefer local key handling? <a href="https://github.com/aizzaku/nansen360noscope" target="_blank" rel="noreferrer">Download the public GitHub</a> and run it locally.</span></footer>

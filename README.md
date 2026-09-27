@@ -2,6 +2,16 @@
 
 Nansen 360 NoScope is a beginner-friendly on-chain investigation workspace that turns wallet, trader, token, Smart Money, and DeFi data into guided, evidence-based analysis.
 
+> Choose a tool → add your own key → confirm the cost → review the evidence.
+
+**Verified live:** 106/106 successful Nansen API calls across 11 endpoints and all five tools. See the [validation evidence](./API_VALIDATION.md).
+
+## 60-second walkthrough
+
+[Watch or download the silent submission walkthrough](./videos/nansen360noscope-launch/assets/nansen360noscope-submission-silent.mp4). It covers BYOK setup and a live workflow for every tool.
+
+![Nansen 360 NoScope walkthrough contact sheet](./videos/nansen360noscope-launch/snapshots/submission-contact.jpg)
+
 ## Features
 
 - Five focused investigation tools
@@ -71,6 +81,15 @@ For additional protection, create a dedicated, revocable key for this tool rathe
 5. Deploy, then confirm that a key is requested in the interface and that reloading the page clears it.
 
 Because the application is BYOK, each visitor's Nansen account is responsible for their own API access and credits.
+
+### Post-deployment check
+
+- Open the production URL in a private window.
+- Confirm **Investigate** is the default mode.
+- Confirm the API-key prompt appears before a paid run.
+- Run one public Wallet Activity case and inspect its query log.
+- Reload and confirm the key is cleared while the site remains usable.
+- Check the tool navigation once at desktop width and once on mobile.
 
 The optional validation script still accepts a local environment variable for maintainers:
 
