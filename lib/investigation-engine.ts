@@ -24,7 +24,7 @@ export async function callNansen(apiKey: string, endpoint: string, body: object)
     const credits = creditsHeader !== null && Number.isFinite(Number(creditsHeader)) ? Number(creditsHeader) : null;
     const log: QueryLog = { endpoint, status: response.ok && payload !== null ? "complete" : "failed", credits,
       requestId: response.headers.get("x-request-id") ?? undefined, remaining: response.headers.get("x-nansen-credits-remaining") ?? undefined };
-    if (log.status === "failed") log.error = response.status === 429 ? "Rate limited. Wait before retrying." : response.status === 401 || response.status === 403 ? "Access denied. Check the server API key and plan." : `Query unavailable (HTTP ${response.status}).`;
+    if (log.status === "failed") log.error = response.status === 429 ? "Rate limited. Wait before retrying." : response.status === 401 || response.status === 403 ? "Access denied. Check your Nansen API key and plan." : `Query unavailable (HTTP ${response.status}).`;
     return { log, payload: log.status === "complete" ? payload : null };
   } catch (error) {
     return { log: { endpoint, status: "failed", credits: null, error: error instanceof Error && error.name === "AbortError" ? "Query timed out after 15 seconds." : "Could not reach Nansen." }, payload: null };
@@ -114,13 +114,13 @@ export function normalizeWallet(calls: Call[]) {
   const total = sum(assets.map(a => num(a.value_usd)));
   const sorted = [...assets].sort((a, b) => (num(b.value_usd) ?? 0) - (num(a.value_usd) ?? 0));
   const topShare = ratio(num(sorted[0]?.value_usd), total);
-  const evidence = [table("Asset composition", balance, ["Asset", "Observed value", "Share of sample"], sorted.slice(0, 12).map(a => [str(a.token_symbol), money(num(a.value_usd)), pct(ratio(num(a.value_usd), total))])),
+  const evidence = [table("Asset composition", balance, ["Asset", "Observed value", "Share of returned page"], sorted.slice(0, 12).map(a => [str(a.token_symbol), money(num(a.value_usd)), pct(ratio(num(a.value_usd), total))])),
     table("Wallet relationships", relationships, ["Wallet", "Label", "Relationship"], related.slice(0, 12).map(r => [str(r.address), str(r.address_label, "Unlabelled"), str(r.relation)])),
     table("Recent activity", activity, ["Method", "Sent / received", "Time"], transactions.slice(0, 12).map(t => [str(t.method), `${list(t.tokens_sent).map(a => str(a.token_symbol)).join(", ") || "—"} → ${list(t.tokens_received).map(a => str(a.token_symbol)).join(", ") || "—"}`, str(t.block_timestamp)]))];
   evidence[0].bars = sorted.slice(0, 6).flatMap(a => { const share = ratio(num(a.value_usd), total); return share === null ? [] : [{ label: str(a.token_symbol), value: share, display: pct(share) }]; });
-  return { metrics: [metric("Observed assets", money(total), "First page; not total portfolio"), metric("Activity sample", available(activity) ? String(transactions.length) : "Unavailable", "Up to 100 transactions"), metric("Related wallets", available(relationships) ? String(related.length) : "Unavailable", "Returned relationships")], evidence,
-    observations: [topShare === null ? "Asset concentration could not be established." : `The largest asset is ${pct(topShare)} of the returned balance sample.`, "A funding or transaction link does not establish common ownership."],
-    conclusion: topShare !== null && topShare >= 60 ? "The observed holdings are concentrated. Inspect the transaction direction and relationships before assigning a behavioral label." : "Use the returned activity and relationship evidence together. This sample alone does not establish wallet ownership or intent." };
+  return { metrics: [metric("Observed assets", money(total), "First page; not total portfolio"), metric("Returned activity", available(activity) ? String(transactions.length) : "Unavailable", "Up to 100 transactions"), metric("Related wallets", available(relationships) ? String(related.length) : "Unavailable", "Returned relationships")], evidence,
+    observations: [topShare === null ? "Asset concentration could not be established." : `The largest asset is ${pct(topShare)} of the returned balance page.`, "A funding or transaction link does not establish common ownership."],
+    conclusion: topShare !== null && topShare >= 60 ? "The observed holdings are concentrated. Inspect the transaction direction and relationships before assigning a behavioral label." : "Use the returned activity and relationship evidence together. This evidence alone does not establish wallet ownership or intent." };
 }
 
 export function normalizeTrader(calls: Call[]) {
@@ -158,7 +158,7 @@ export function normalizeDefi(calls: Call[], chain: string) {
   const concentration = ratio(largest, assets);
   const byChain = new Map<string, (number | null)[]>();
   protocols.forEach(p => { const key = str(p.chain); byChain.set(key, [...(byChain.get(key) ?? []), num(p.total_assets_usd)]); });
-  return { metrics: [metric("Liquid / deployed assets", `${money(liquid)} / ${money(assets)}`, `${chain} wallet sample / all-chain DeFi`), metric("Largest protocol", pct(concentration), "Share of cross-chain deployed assets"), metric("DeFi debt", money(debt), "Health factors not returned by this endpoint")],
+  return { metrics: [metric("Liquid / deployed assets", `${money(liquid)} / ${money(assets)}`, `${chain} balance page / all-chain DeFi`), metric("Largest protocol", pct(concentration), "Share of cross-chain deployed assets"), metric("DeFi debt", money(debt), "Health factors not returned by this endpoint")],
     evidence: [table("Protocol exposure", defiCall, ["Protocol", "Chain", "Assets", "Debt", "Rewards"], protocols.map(p => [str(p.protocol_name), str(p.chain), money(num(p.total_assets_usd)), money(num(p.total_debts_usd)), money(num(p.total_rewards_usd))])), table("Chain concentration", defiCall, ["Chain", "Deployed assets", "Share"], [...byChain].map(([key, values]) => [key, money(sum(values)), pct(ratio(sum(values), assets))])), table("Positions", defiCall, ["Protocol", "Token", "Position", "Value"], protocols.flatMap(p => list(p.tokens).map(t => [str(p.protocol_name), str(t.symbol), str(t.position_type), money(num(t.value_usd))])).slice(0, 30))],
     observations: ["Wallet balances cover the selected chain; DeFi positions cover all chains returned by Nansen. A global liquid/deployed percentage is not inferred from different scopes.", "Health factor and liquidation price are unavailable in this endpoint. Missing debt or rewards remain unavailable."],
     conclusion: debt !== null && debt > 0 ? `The portfolio reports ${money(debt)} in DeFi debt. Review protocol concentration and collateral terms; these balances do not establish a liquidation threshold.` : "Review the protocol and chain distribution. Available balances cannot establish liquidation safety." };

@@ -14,7 +14,9 @@ Every investigation should follow the same discipline:
 6. **Conclusion** — Make the narrowest defensible claim.
 7. **Limit** — State what the available data cannot establish.
 
-Use Sample mode to learn the interface. Sample conclusions are teaching fixtures, not measurements of the address typed into the input. Use Live mode only when a server-side Nansen API key is configured.
+Every tool uses live Nansen data and requires the visitor's own API key. The key is held only in memory for the current browser tab, sent over HTTPS to the app's same-origin route when a run is confirmed, and transiently forwarded to Nansen. The application does not persist or log it. Review the estimated request and credit use before every run.
+
+Use a dedicated, revocable key for this tool. If the Nansen dashboard offers per-key credit or rate limits for your account, set conservative limits and monitor usage. Closing or reloading the tab clears the key.
 
 ---
 

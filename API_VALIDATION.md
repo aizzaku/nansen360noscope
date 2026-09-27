@@ -30,10 +30,12 @@ Review the dry run first:
 node scripts/validate-nansen-api.mjs --dry-run
 ```
 
-With `NANSEN_API_KEY` configured locally, execute the live validation:
+For maintainers only, configure `NANSEN_API_KEY` in the local shell or an ignored `.env.local`, then execute the live validation:
 
 ```bash
 node scripts/validate-nansen-api.mjs --execute
 ```
 
 The runner stops immediately on authentication failures and after three consecutive rate limits. Generated reports are ignored by Git. They include only workflow labels, endpoints, request fingerprints, status codes, credit headers, request IDs, row counts, and timing—never the API key or response payloads.
+
+This environment variable belongs only to the standalone validation script. The deployed application uses a bring-your-own-key flow: visitor keys are held in browser-tab memory and transiently forwarded through the same-origin API route for each confirmed analysis. They are not stored or logged by the application.

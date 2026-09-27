@@ -10,21 +10,21 @@ Nansen 360 NoScope is a beginner-friendly on-chain investigation workspace that 
 - Token-holder and directional flow analysis
 - Smart Money token screening
 - Cross-chain DeFi exposure analysis
-- Two public example workflows for every tool
-- Guided investigations that teach the analysis method
-- Sample mode without credits and optional live Nansen data
+- Two public case-study inputs for every tool
+- Per-tool analysis guides that explain the method
+- Live Nansen data using each visitor's own API key
 - Locally saved investigation snapshots
 - Supported-chain visibility before every run
 
 ## How to use it
 
 1. Choose the question you want to investigate.
-2. Enter a wallet or token, or load a public example.
-3. Select Sample or Live data.
-4. Run the analysis.
-5. Read the visual conclusion and key metrics.
-6. Open the underlying evidence before drawing a conclusion.
-7. Save useful investigations for later.
+2. Enter your Nansen API key. It is held only in memory for the current browser tab.
+3. Enter a wallet or token, or load a public case study.
+4. Choose the chain, time window, and any tool-specific filters.
+5. Review the estimated requests and credits, then run the analysis.
+6. Read the visual conclusion and inspect the underlying evidence.
+7. Save useful investigation results locally for later review.
 
 Use the compact **Analysis guide** inside every Investigate tool. For the complete evidence checks, metric definitions, mistakes, and conclusion limits, read the [Analyst Guide](./ANALYST_GUIDE.md).
 
@@ -44,17 +44,41 @@ Requires Node.js `>=22.13.0`.
 
 ```bash
 npm ci
-copy .env.example .env.local
 npm run dev
 ```
 
-Add the live key only to `.env.local`:
+Open the app and enter your key in the API-key control. The application does not require a shared server-side Nansen key.
+
+## Bring your own API key
+
+Nansen 360 NoScope uses a bring-your-own-key model:
+
+- The key is held only in the current browser tab's memory. It is not written to local storage, session storage, saved investigations, URLs, logs, or the repository.
+- When an analysis runs, the browser sends the key over HTTPS to the app's same-origin API route. The route forwards it to Nansen for that request and does not store or return it.
+- Closing or reloading the tab clears the in-memory key. The user can also clear it from the interface.
+- The fixed server-side adapters decide which Nansen endpoints may be called; users cannot supply an arbitrary upstream URL.
+
+The key necessarily passes through the app's server route while a request is being processed. “Held in tab memory” means the app does not persist it, not that the server never receives it.
+
+For additional protection, create a dedicated, revocable key for this tool rather than reusing a primary key. If the Nansen dashboard offers per-key credit or rate limits for your account, set conservative limits and monitor usage. Revoke and replace the key immediately if you suspect exposure.
+
+## Vercel deployment
+
+1. Import `aizzaku/nansen360noscope` into Vercel.
+2. Keep the project root at the repository root and select the Next.js framework preset.
+3. Use the repository's normal install and build commands.
+4. Do **not** add `NANSEN_API_KEY` or any visitor key to Vercel environment variables.
+5. Deploy, then confirm that a key is requested in the interface and that reloading the page clears it.
+
+Because the application is BYOK, each visitor's Nansen account is responsible for their own API access and credits.
+
+The optional validation script still accepts a local environment variable for maintainers:
 
 ```env
-NANSEN_API_KEY=your_server_side_key
+NANSEN_API_KEY=your_validation_key
 ```
 
-The key remains server-side and `.env.local` is ignored by Git.
+This variable is used by `scripts/validate-nansen-api.mjs`, not by the deployed application. `.env.local` is ignored by Git.
 
 ## Verification
 
@@ -66,11 +90,9 @@ npm run build
 
 ## Live API surface
 
-The server adapters cover Nansen profiler balances, transactions, related wallets, PnL, DEX trades, token holders and flows, Smart Money holdings/netflows, token screening, and DeFi holdings. Live runs show request status and reported credit use in the query log.
+The same-origin adapters cover Nansen profiler balances, transactions, related wallets, PnL, DEX trades, token holders and flows, Smart Money holdings/netflows, token screening, and DeFi holdings. Live runs show request status and reported credit use in the query log.
 
 The integration was verified with [106 successful live API calls across all five tools](./API_VALIDATION.md).
-
-Without a key, the product remains fully reviewable through explicitly labelled sample data. Sample conclusions are teaching fixtures, not measurements of the entered address.
 
 ## Safety and interpretation
 

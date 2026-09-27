@@ -35,7 +35,7 @@ export const workflowExamples: Record<ToolId, [WorkflowExample, WorkflowExample]
   trader: [
     {
       title: "Stress-test a PnL profile",
-      subjectLabel: "Nansen PnL fixture · Ethereum",
+      subjectLabel: "Nansen guide wallet · Ethereum",
       purpose: "Check whether headline profitability survives after removing the wallet's best token.",
       steps: ["Review the 90-day PnL summary.", "Measure how much the top token contributes.", "Inspect DEX trades and losses before judging repeatability."],
       input: { subject: "0x39d52da6beec991f075eebe577474fd105c5caec", chain: "ethereum", days: 90 },
@@ -66,7 +66,7 @@ export const workflowExamples: Record<ToolId, [WorkflowExample, WorkflowExample]
     {
       title: "Compare a Solana token flow",
       subjectLabel: "PENGU · Solana",
-      purpose: "Repeat the holder-and-flow method on the Solana token fixture used in Nansen's documentation.",
+      purpose: "Repeat the holder-and-flow method on the Solana token used in Nansen's documentation.",
       steps: ["Review holder distribution.", "Compare cohort inflows and outflows.", "Inspect buyer and seller activity before forming a narrative."],
       input: { subject: "2zMMhcVQEXDtdE6vsFS7S7D5oUodfJHE8vd1gnBouauv", chain: "solana", days: 30 },
       sourceLabel: "Nansen token-flow documentation",
